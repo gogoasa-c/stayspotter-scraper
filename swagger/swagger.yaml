@@ -1,0 +1,72 @@
+swagger: "2.0"
+info:
+  version: "1.0.0"
+  title: "StaySpotter Scraper"
+  description: "StaySpotter API microservice. This is the microservice responsible for scraping Booking, AirBnb and other sites for stay information."
+  contact:
+    email: "gogoasac16@gmail.com"
+    name: "Cristian Gogoasa"
+paths:
+  /stay:
+    post:
+      summary: " "
+      description: "Returns a list of stays from various booking websites, with information concerning the price per night, a link to the stay, and URL's with photos."
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - in: "body"
+          name: "stay"
+          schema:
+            $ref: "#/definitions/Stay"
+          required: true
+      responses:
+        "200":
+          description: "The list has been successfully retrieved."
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/ReturnedStay"
+        "400":
+          description: "Invalid input for scraping stays."
+definitions:
+  Stay:
+    type: "object"
+    properties:
+      city:
+        type: "string"
+        example: "Timisoara"
+      adults:
+        type: "integer"
+        example: 2
+      rooms:
+        type: "integer"
+        example: 1
+      checkin:
+        type: "string"
+        format: "date"
+        example: "2018-05-05"
+      checkout:
+        type: "string"
+        format: "date"
+        example: "2018-05-06"
+  ReturnedStay:
+    type: "object"
+    properties:
+      name:
+        type: "string"
+        example: "Cazation of Doom"
+      price:
+        type: "integer"
+        example: "1864 lei"
+      link:
+        type: "string"
+        format: "uri"
+        example: "https://www.booking.com/hotel/ro/cazation-of-doom.html"
+      x:
+        type: "number"
+        example: "45.7489"
+      y:
+        type: "number"
+        example: "21.2087"

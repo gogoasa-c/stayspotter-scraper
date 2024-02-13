@@ -1,0 +1,11 @@
+pyms:
+  services:
+    requests: true
+    swagger:
+      path: "./swagger"
+      file: "swagger.yaml"
+  config:
+    DEBUG: true
+    TESTING: false
+    APP_NAME: "StaySpotterScraper Service"
+    APPLICATION_ROOT: ""
