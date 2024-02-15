@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "disable_existing_loggers": false,
+  "handlers": {
+    "console": {
+      "level": "DEBUG",
+      "class": "logging.StreamHandler",
+      "formatter": "standard"
+    }
+  },
+  "formatters": {
+    "standard": {
+      "format": "[%(asctime)s] [%(levelname)s] %(message)s"
+    }
+  },
+  "loggers": {
+    "": {
+      "handlers": [
+        "console"
+      ],
+      "level": "DEBUG",
+      "propagate": true
+    },
+    "anyconfig": {
+      "handlers": [
+        "console"
+      ],
+      "level": "WARNING",
+      "propagate": true
+    },
+    "pyms": {
+      "handlers": [
+        "console"
+      ],
+      "level": "WARNING",
+      "propagate": true
+    },
+    "root": {
+      "handlers": [
+        "console"
+      ],
+      "level": "DEBUG",
+      "propagate": true
+    }
+  }
+}

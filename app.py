@@ -1,12 +1,8 @@
+import json
 import logging
 import logging.config
 
-from bs4 import BeautifulSoup
-import requests
-import time
-import threading as thr
-
-from flask import Flask, Blueprint
+from flask import Flask
 from pyms.flask.app import Microservice
 
 from controller.stay_controller import ss_blueprint
@@ -21,41 +17,10 @@ class SSScraperMicroservice(Microservice):
         if not self.application.config["DEBUG"]:
             super().init_logger()
         else:
-            level = "DEBUG"
-            LOGGING = {
-                'version': 1,
-                'disable_existing_loggers': False,
-                'handlers': {
-                    'console': {
-                        'level': level,
-                        'class': 'logging.StreamHandler',
-                    },
-                },
-                'loggers': {
-                    '': {
-                        'handlers': ['console'],
-                        'level': level,
-                        'propagate': True,
-                    },
-                    'anyconfig': {
-                        'handlers': ['console'],
-                        'level': "WARNING",
-                        'propagate': True,
-                    },
-                    'pyms': {
-                        'handlers': ['console'],
-                        'level': "WARNING",
-                        'propagate': True,
-                    },
-                    'root': {
-                        'handlers': ['console'],
-                        'level': level,
-                        'propagate': True,
-                    },
-                }
-            }
+            with open('./config/logging_config.json', 'r') as f:
+                LOGGING = json.load(f)
+                logging.config.dictConfig(LOGGING)
 
-            logging.config.dictConfig(LOGGING)
 
     def create_app(self) -> Flask:
         app = super().create_app()
