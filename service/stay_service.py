@@ -48,8 +48,6 @@ def __get_coords(property_url: str, property_name: str, properties_dict: {str: [
 def get_stays(city: str, adults: int = None, rooms: int = None,
               checkin_date: str = None, checkout_date: str = None) -> {str: []}:
 
-    logging.info(f"Getting stays for {city}, with parameters: adults={adults}, rooms={rooms}, "
-                 f"checkin_date={checkin_date}, checkout_date={checkout_date}")
     start_time = time.time()
 
     url = __build_url(city, adults, rooms, checkin_date, checkout_date)
