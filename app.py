@@ -10,10 +10,10 @@ from controller.stay_controller import ss_blueprint
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 eureka_client.init(eureka_server="http://localhost:8761",
-                   app_name="ss-scraper",
+                   app_name="scraper",
                    instance_port=8090,
                    instance_host="127.0.0.1")
 

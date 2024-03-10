@@ -55,18 +55,22 @@ definitions:
     type: "object"
     properties:
       name:
-        type: "string"
-        example: "Cazation of Doom"
-      price:
-        type: "integer"
-        example: "1864 lei"
-      link:
-        type: "string"
-        format: "uri"
-        example: "https://www.booking.com/hotel/ro/cazation-of-doom.html"
-      x:
-        type: "number"
-        example: "45.7489"
-      y:
-        type: "number"
-        example: "21.2087"
+        type: "object"
+        properties:
+          link:
+            type: "string"
+            format: "uri"
+            example: "https://www.booking.com/hotel/ro/cazation-of-doom.html"
+          photo:
+            type: "string"
+            format: "uri"
+            example: "https://cf.bstatic.com/xdata/images/hotel/square200/106/1066823.jpg"
+          price:
+            type: "integer"
+            example: "1864 lei"
+          x:
+            type: "number"
+            example: "45.7489"
+          y:
+            type: "number"
+            example: "21.2087"

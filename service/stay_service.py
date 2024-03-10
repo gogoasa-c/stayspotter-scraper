@@ -27,12 +27,23 @@ def __build_url(city: str, adults: int = None, rooms: int = None,
     return base_url
 
 
-def __get_coords(property_url: str, property_name: str, properties_dict: {str: []}) -> None:
+def __get_specific_info(property_url: str, property_name: str, properties_dict: {str: []}) -> None:
     headers = ({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) ' +
                               'Chrome/96.0.4664.110 Safari/537.36 Edg/96.0.1054.62'})
     response = requests.get(property_url, headers=headers)
 
     soup = BeautifulSoup(response.content, 'html.parser')
+
+    coords = __get__coords(soup)
+
+    photo_link = __get_photo_link(soup)
+
+    logging.debug(f"Property: {property_name}, Coords: {coords}, Photo link: {photo_link}")
+
+    properties_dict[property_name].append((float(coords[0]), float(coords[1]), photo_link))
+
+
+def __get__coords(soup: BeautifulSoup) -> (float, float):
     results = soup.findAll('a', {
         'id': 'hotel_sidebar_static_map',
     })
@@ -40,14 +51,36 @@ def __get_coords(property_url: str, property_name: str, properties_dict: {str: [
     coords: str = results.pop(0).__getattribute__('attrs')['data-atlas-latlng']
     split_coords = coords.split(',')
 
-    logging.info(f"Coordinates for property {property_name}: {split_coords[0]}, {split_coords[1]}")
+    return float(split_coords[0]), float(split_coords[1])
 
-    properties_dict[property_name].append((float(split_coords[0]), float(split_coords[1])))
+
+def __get_photo_link(soup: BeautifulSoup) -> str:
+    photo = soup.find('img', {
+        'class': 'hide'
+    })
+
+    return photo['src']
+
+
+def __transform_response(response: {str: []}) -> [{str: {str: str}}]:
+    transformed_response = []
+
+    for name, (link, price, aux_infos) in response.items():
+        transformed_response.append({
+            name: {
+                "link": link,
+                "photo": aux_infos[2],
+                "price": price,
+                "x": aux_infos[0],
+                "y": aux_infos[1],
+            }
+        })
+
+    return transformed_response
 
 
 def get_stays(city: str, adults: int = None, rooms: int = None,
-              checkin_date: str = None, checkout_date: str = None) -> {str: []}:
-
+              checkin_date: str = None, checkout_date: str = None) -> [{str: {str: str}}]:
     start_time = time.time()
 
     url = __build_url(city, adults, rooms, checkin_date, checkout_date)
@@ -75,15 +108,16 @@ def get_stays(city: str, adults: int = None, rooms: int = None,
     response = {}
     for name, link, price in zip(titles, links, prices):
         response[name] = [link, price]
+        # response.append({name: [link, price]})
 
     threads = []
     for name, (link, price) in response.items():
-        t = thr.Thread(target=__get_coords, args=(link, name, response))
+        t = thr.Thread(target=__get_specific_info, args=(link, name, response))
         threads.append(t)
         t.start()
     for t in threads:
         t.join()
 
-    logging.info(f"Got stays for {city} in {time.time() - start_time} seconds")
+    logging.debug(f"Got stays for {city} in {time.time() - start_time} seconds")
 
-    return response
+    return __transform_response(response)
