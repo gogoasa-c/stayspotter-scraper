@@ -5,9 +5,11 @@ import time
 import logging
 import threading as thr
 
+USD = "USD"
 
-def __build_url(city: str, adults: int = None, rooms: int = None,
-                checkin_date: str = None, checkout_date: str = None) -> str:
+
+def __build_url(city: str, adults: int = None, rooms: int = None, checkin_date: str = None,
+                checkout_date: str = None, price_range_start: int = None, price_range_end: int = None) -> str:
     base_url: str = 'https://www.booking.com/searchresults.html?ss='
     base_url += city
 
@@ -19,6 +21,8 @@ def __build_url(city: str, adults: int = None, rooms: int = None,
         base_url += "&group_adults=" + str(adults)
     if rooms is not None:
         base_url += "&no_rooms=" + str(rooms)
+    if price_range_start is not None and price_range_end is not None:
+        base_url += "&nflt=price%3D" + USD + "-" + str(price_range_start) + "-" + str(price_range_end) + "-1"
 
     base_url += "&group_children=0"
 
@@ -62,30 +66,30 @@ def __get_photo_link(soup: BeautifulSoup) -> str:
     return photo['src']
 
 
-def __transform_response(response: {str: []}) -> [{str: {str: str}}]:
+def __transform_response(response: {str: []}) -> [{str: str}]:
     transformed_response = []
 
     for name, (link, price, aux_infos) in response.items():
         transformed_response.append({
-            name: {
-                "link": link,
-                "photo": aux_infos[2],
-                "price": price,
-                "x": aux_infos[0],
-                "y": aux_infos[1],
-            }
+            "name": name,
+            "link": link,
+            "photo": aux_infos[2],
+            "price": price,
+            "x": aux_infos[0],
+            "y": aux_infos[1],
         })
 
     return transformed_response
 
 
-def get_stays(city: str, adults: int = None, rooms: int = None,
-              checkin_date: str = None, checkout_date: str = None) -> [{str: {str: str}}]:
+def get_stays(city: str, adults: int = None, rooms: int = None, checkin_date: str = None, checkout_date: str = None,
+              price_range_start: int = None, price_range_end: int = None) -> [{str: {str: str}}]:
     start_time = time.time()
 
-    url = __build_url(city, adults, rooms, checkin_date, checkout_date)
+    url = __build_url(city, adults, rooms, checkin_date, checkout_date, price_range_start, price_range_end)
     headers = ({'user-agent': 'mozilla/5.0 (windows nt 10.0; win64; x64) applewebkit/537.36 (khtml, like gecko) ' +
                               'chrome/96.0.4664.110 safari/537.36 edg/96.0.1054.62'})
+    logging.error(f"URL: {url}")
     response = requests.get(url, headers=headers)
 
     soup = BeautifulSoup(response.content, 'html.parser')
@@ -108,7 +112,6 @@ def get_stays(city: str, adults: int = None, rooms: int = None,
     response = {}
     for name, link, price in zip(titles, links, prices):
         response[name] = [link, price]
-        # response.append({name: [link, price]})
 
     threads = []
     for name, (link, price) in response.items():

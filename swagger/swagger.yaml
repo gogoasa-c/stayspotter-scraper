@@ -46,11 +46,11 @@ definitions:
       checkin:
         type: "string"
         format: "date"
-        example: "2018-05-05"
+        example: "2024-05-05"
       checkout:
         type: "string"
         format: "date"
-        example: "2018-05-06"
+        example: "2024-05-06"
   ReturnedStay:
     type: "object"
     properties:
