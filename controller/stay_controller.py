@@ -14,10 +14,10 @@ def get_stays():
     city = request.json['city']
     adults = request.json['adults']
     rooms = request.json['rooms']
-    checkin_date = request.json['checkin']
-    checkout_date = request.json['checkout']
-    price_range_start = request.json.get('price_range_start')
-    price_range_end = request.json.get('price_range_end')
+    checkin_date = request.json['checkIn']
+    checkout_date = request.json['checkOut']
+    price_range_start = request.json.get('priceRangeStart')
+    price_range_end = request.json.get('priceRangeEnd')
 
     response = stay_service.get_stays(city, adults, rooms, checkin_date, checkout_date,
                                       price_range_start, price_range_end)
