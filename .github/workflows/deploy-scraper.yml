@@ -1,0 +1,32 @@
+name: Deploy Scraper to GCVM
+
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: 'Branch name'
+        default: 'main'
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Scraper
+      uses: actions/checkout@v3
+      with:
+        ref: ${{ github.event.inputs.name }}
+
+    - name: Copy Repository Contents to VM
+      uses: appleboy/scp-action@master
+      with:
+        host: ${{ secrets.VM_IP }}
+        username: 'gogoasa'
+        key: ${{ secrets.VM_SSH_KEY }}
+        source: "/config/*,/controller/*,/service/*,app.py,requirements.txt,config.yml"
+        target: "/home/gogoasa/webapp/scraper"
+        port: 22
+        overwrite: true
+
