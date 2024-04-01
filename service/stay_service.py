@@ -94,6 +94,8 @@ def get_stays(city: str, adults: int = None, rooms: int = None, checkin_date: st
 
     soup = BeautifulSoup(response.content, 'html.parser')
 
+    logging.error(f"THIS IS THE SOUP: {soup}")
+
     titles_raw = soup.findAll('div', {
         'data-testid': 'title'
     })
