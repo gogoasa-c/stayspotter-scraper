@@ -25,7 +25,7 @@ jobs:
         host: ${{ secrets.VM_IP }}
         username: 'gogoasa'
         key: ${{ secrets.VM_SSH_KEY }}
-        source: "/config,/controller,/service,app.py,requirements.txt,config.yml"
+        source: "config/*,controller/*,service/*,app.py,requirements.txt,config.yml"
         target: "/home/gogoasa/webapp/scraper"
         port: 22
         overwrite: true
