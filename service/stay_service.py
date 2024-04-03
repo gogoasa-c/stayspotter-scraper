@@ -90,7 +90,11 @@ def get_stays(city: str, adults: int = None, rooms: int = None, checkin_date: st
     headers = ({'user-agent': 'mozilla/5.0 (windows nt 10.0; win64; x64) applewebkit/537.36 (khtml, like gecko) ' +
                               'chrome/96.0.4664.110 safari/537.36 edg/96.0.1054.62'})
     logging.error(f"URL: {url}")
+    response1 = requests.get(url, headers=headers)
     response = requests.get(url, headers=headers)
+
+    if response1 == response:
+        logging.error("THEY ARE EQUAL")
 
     soup = BeautifulSoup(response.content, 'html.parser')
 
