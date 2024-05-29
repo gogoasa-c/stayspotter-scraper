@@ -51,6 +51,12 @@ definitions:
         type: "string"
         format: "date"
         example: "2024-05-06"
+      pricerangestartdate:
+        type: "integer"
+        example: 40
+      pricerangeenddate:
+        type: "integer"
+        example: 60
   ReturnedStay:
     type: "object"
     properties:

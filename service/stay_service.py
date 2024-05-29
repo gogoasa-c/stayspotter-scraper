@@ -73,7 +73,7 @@ def __transform_response(response: {str: []}) -> [{str: str}]:
         transformed_response.append({
             "name": name,
             "link": link,
-            "photo": aux_infos[2],
+            "photoUrl": aux_infos[2],
             "price": price,
             "x": aux_infos[0],
             "y": aux_infos[1],
@@ -87,8 +87,7 @@ def get_stays(city: str, adults: int = None, rooms: int = None, checkin_date: st
     start_time = time.time()
 
     url = __build_url(city, adults, rooms, checkin_date, checkout_date, price_range_start, price_range_end)
-    headers = ({'user-agent': 'mozilla/5.0 (windows nt 10.0; win64; x64) applewebkit/537.36 (khtml, like gecko) ' +
-                              'chrome/96.0.4664.110 safari/537.36 edg/96.0.1054.62'})
+    headers = ({'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0'})
     logging.error(f"URL: {url}")
     response1 = requests.get(url, headers=headers)
     response = requests.get(url, headers=headers)
@@ -128,5 +127,5 @@ def get_stays(city: str, adults: int = None, rooms: int = None, checkin_date: st
         t.join()
 
     logging.debug(f"Got stays for {city} in {time.time() - start_time} seconds")
-
+    logging.debug(f'URL: {url}')
     return __transform_response(response)
