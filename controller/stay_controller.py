@@ -27,3 +27,16 @@ def get_stays():
     logging.info(f"Returning response: {response}")
 
     return jsonify(response)
+
+@ss_blueprint.route('/stays/availability', methods=['POST'])
+def check_stay_availability():
+    logging.info(f"Received request: {request.json}")
+    
+    if 'stayUrl' not in request.json:
+        return jsonify({'error': 'stayUrl is required'}).status_code(400)
+    
+    stay_url = request.json['stayUrl']
+    
+    response = stay_service.check_stay_availability(stay_url)
+    
+    return jsonify(response)

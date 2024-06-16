@@ -30,6 +30,32 @@ paths:
               $ref: "#/definitions/ReturnedStay"
         "400":
           description: "Invalid input for scraping stays."
+  /stay/avaiability:
+    post:
+      summary: " "
+      description: "Returns a list of stays from various booking websites, with information concerning the price per night, a link to the stay, and URL's with photos."
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - in: "body"
+          name: "stayUrl"
+          schema:
+            type: "string"
+            example: "https://www.booking.com/hotel/ro/cazation-of-doom.html"
+          required: true
+      responses:
+        "200":
+          description: "The stay check has been successful and the stay is either available, or not."
+          schema:
+            type: "object"
+            properties:
+              available:
+                type: "boolean"
+                example: true
+        "400":
+          description: "Invalid input for scraping stays."
 definitions:
   Stay:
     type: "object"

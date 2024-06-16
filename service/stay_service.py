@@ -129,3 +129,21 @@ def get_stays(city: str, adults: int = None, rooms: int = None, checkin_date: st
     logging.debug(f"Got stays for {city} in {time.time() - start_time} seconds")
     logging.debug(f'URL: {url}')
     return __transform_response(response)
+
+
+def check_stay_availability(stay_url):
+    headers = ({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) ' +
+                              'Chrome/96.0.4664.110 Safari/537.36 Edg/96.0.1054.62'})
+    response = requests.get(stay_url, headers=headers)
+
+    soup = BeautifulSoup(response.content, "html.parser")
+    stay_cards = soup.findAll('div', {
+        'data-testid': 'property-card-container'
+    })
+
+    unavailable_stays = [card for card in stay_cards if "This property has no availability" in card.text]
+    
+    if len(unavailable_stays) > 0:
+        return {"available": False}
+    
+    return {"available": True}
