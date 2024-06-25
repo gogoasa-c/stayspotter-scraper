@@ -77,10 +77,10 @@ definitions:
         type: "string"
         format: "date"
         example: "2024-05-06"
-      pricerangestartdate:
+      priceRangeStart:
         type: "integer"
         example: 40
-      pricerangeenddate:
+      priceRangeEnd:
         type: "integer"
         example: 60
   ReturnedStay:

@@ -1,4 +1,5 @@
 import logging
+import threading as thr
 
 import service.stay_service as stay_service
 
@@ -24,7 +25,7 @@ def get_stays():
     response = stay_service.get_stays(city, adults, rooms, checkin_date, checkout_date,
                                       price_range_start, price_range_end)
 
-    logging.info(f"Returning response: {response}")
+    # logging.info(f"Returning response: {response}")
 
     return jsonify(response)
 

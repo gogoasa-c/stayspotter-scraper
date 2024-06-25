@@ -1,8 +1,13 @@
 from bs4 import BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 
 import requests
 import time
 import logging
+import re
 import threading as thr
 
 USD = "USD"
@@ -26,8 +31,29 @@ def __build_url(city: str, adults: int = None, rooms: int = None, checkin_date: 
 
     base_url += "&group_children=0"
 
-    logging.info(f"Built URL: {base_url}")
+    # logging.info(f"Built URL: {base_url}")
 
+    return base_url
+
+def __build_url_airbnb(city: str, adults: int = None, rooms: int = None, checkin_date: str = None, checkout_date: str = None,
+              price_range_start: int = None, price_range_end: int = None) -> str:
+    if " " in city:
+        city = city.replace(" ", "%20")
+        
+    base_url = f"https://www.airbnb.com/s/{city}/homes?"
+    
+    if adults:
+        base_url += f"adults={adults}&"
+    if rooms:
+        base_url += f"min_bedrooms={rooms}&"
+    if checkin_date:
+        base_url += f"checkin={checkin_date}&"
+    if checkout_date:
+        base_url += f"checkout={checkout_date}&"
+    if price_range_start:
+        base_url += f"price_min={price_range_start}&"
+    if price_range_end:
+        base_url += f"price_max={price_range_end}&"
     return base_url
 
 
@@ -42,7 +68,7 @@ def __get_specific_info(property_url: str, property_name: str, properties_dict: 
 
     photo_link = __get_photo_link(soup)
 
-    logging.debug(f"Property: {property_name}, Coords: {coords}, Photo link: {photo_link}")
+    # logging.debug(f"Property: {property_name}, Coords: {coords}, Photo link: {photo_link}")
 
     properties_dict[property_name].append((float(coords[0]), float(coords[1]), photo_link))
 
@@ -51,6 +77,9 @@ def __get__coords(soup: BeautifulSoup) -> (float, float):
     results = soup.findAll('a', {
         'id': 'hotel_sidebar_static_map',
     })
+
+    if (len(results) == 0):
+        return 0, 0
 
     coords: str = results.pop(0).__getattribute__('attrs')['data-atlas-latlng']
     split_coords = coords.split(',')
@@ -66,7 +95,7 @@ def __get_photo_link(soup: BeautifulSoup) -> str:
     return photo['src']
 
 
-def __transform_response(response: {str: []}) -> [{str: str}]:
+def __transform_response(response: {str: []}, additional_stays: [{str: any}]) -> [{str: str}]:
     transformed_response = []
 
     for name, (link, price, aux_infos) in response.items():
@@ -78,6 +107,9 @@ def __transform_response(response: {str: []}) -> [{str: str}]:
             "x": aux_infos[0],
             "y": aux_infos[1],
         })
+    
+    for stay in additional_stays:
+        transformed_response.append(stay)
 
     return transformed_response
 
@@ -86,18 +118,23 @@ def get_stays(city: str, adults: int = None, rooms: int = None, checkin_date: st
               price_range_start: int = None, price_range_end: int = None) -> [{str: {str: str}}]:
     start_time = time.time()
 
+    airbnb_stays = []
+    
+    thread = thr.Thread(target=get_stays_airbnb, args=(city, adults, rooms, checkin_date, checkout_date, price_range_start, price_range_end, airbnb_stays))
+    thread.start()
+
     url = __build_url(city, adults, rooms, checkin_date, checkout_date, price_range_start, price_range_end)
     headers = ({'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0'})
-    logging.error(f"URL: {url}")
-    response1 = requests.get(url, headers=headers)
+    # logging.error(f"URL: {url}")
+    # response1 = requests.get(url, headers=headers)
     response = requests.get(url, headers=headers)
 
-    if response1 == response:
-        logging.error("THEY ARE EQUAL")
+    # if response1 == response:
+        # logging.error("THEY ARE EQUAL")
 
     soup = BeautifulSoup(response.content, 'html.parser')
 
-    logging.error(f"THIS IS THE SOUP: {soup}")
+    # logging.error(f"THIS IS THE SOUP: {soup}")
 
     titles_raw = soup.findAll('div', {
         'data-testid': 'title'
@@ -114,6 +151,12 @@ def get_stays(city: str, adults: int = None, rooms: int = None, checkin_date: st
     })
     prices = [price.get_text().strip() for price in prices_raw]
 
+    thread.join()
+
+    logging.info(f"For airbnb stays got {len(airbnb_stays)} stays in {time.time() - start_time} seconds")
+
+    logging.info(airbnb_stays[0])
+    
     response = {}
     for name, link, price in zip(titles, links, prices):
         response[name] = [link, price]
@@ -126,10 +169,60 @@ def get_stays(city: str, adults: int = None, rooms: int = None, checkin_date: st
     for t in threads:
         t.join()
 
-    logging.debug(f"Got stays for {city} in {time.time() - start_time} seconds")
-    logging.debug(f'URL: {url}')
-    return __transform_response(response)
+    logging.info(f"Got stays for {city} in {time.time() - start_time} seconds")
+    # logging.debug(f'URL: {url}')
+    return __transform_response(response, airbnb_stays)
 
+def get_stays_airbnb(city: str, adults: int = None, rooms: int = None, checkin_date: str = None, checkout_date: str = None,
+              price_range_start: int = None, price_range_end: int = None, stays: [{str: str}] = None): 
+    url = __build_url_airbnb(city, adults, rooms, checkin_date, checkout_date, price_range_start, price_range_end)
+
+    driver = webdriver.Chrome()
+    
+    driver.get(url)
+    try:
+        WebDriverWait(driver, 3).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, 'meta[itemprop="url"]'))
+        )
+        
+        soup = BeautifulSoup(driver.page_source, 'html.parser')
+        
+        driver.quit()
+        
+        cards = soup.findAll('meta', {
+            'itemprop': 'url'
+        })
+        
+        images = soup.findAll('img', {
+            'data-original-uri': True,
+            'style': lambda style: '--dls-liteimage-border-radius: 50%;' not in style
+        })
+        
+        total_prices = soup.findAll('span', {
+            'class': False
+        }, string=re.compile(r'[\d,]+\slei\stotal'))
+        
+        titles = soup.findAll('meta', {
+            'itemprop': 'name'
+        })
+        
+        stay_info = [
+            {
+                'name': title["content"],
+                'price': price.text.replace('\xa0', ' '),
+                'photoUrl': image['src'],
+                'link': f'https://{card["content"]}',
+                'x': 0,
+                'y': 0
+            }
+            for title, price, image, card in zip(titles, total_prices, images, cards)
+        ]
+        
+        for stay in stay_info:
+            stays.append(stay)
+    except Exception as e:
+        print(e)
+        driver.quit()
 
 def check_stay_availability(stay_url):
     headers = ({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) ' +

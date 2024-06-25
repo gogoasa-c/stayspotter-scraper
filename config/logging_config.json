@@ -3,7 +3,7 @@
   "disable_existing_loggers": false,
   "handlers": {
     "console": {
-      "level": "DEBUG",
+      "level": "INFO",
       "class": "logging.StreamHandler",
       "formatter": "standard"
     }
@@ -18,7 +18,7 @@
       "handlers": [
         "console"
       ],
-      "level": "DEBUG",
+      "level": "INFO",
       "propagate": true
     },
     "anyconfig": {
@@ -39,7 +39,7 @@
       "handlers": [
         "console"
       ],
-      "level": "DEBUG",
+      "level": "INFO",
       "propagate": true
     }
   }
