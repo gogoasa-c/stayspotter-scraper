@@ -3,7 +3,10 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
+import nltk
 import requests
 import time
 import logging
@@ -11,6 +14,8 @@ import re
 import threading as thr
 
 USD = "USD"
+
+nltk.download('punkt')
 
 
 def __build_url(city: str, adults: int = None, rooms: int = None, checkin_date: str = None,
@@ -88,11 +93,7 @@ def __get__coords(soup: BeautifulSoup) -> (float, float):
 
 
 def __get_photo_link(soup: BeautifulSoup) -> str:
-    photo = soup.find('img', {
-        'class': 'hide'
-    })
-
-    return photo['src']
+    return soup.find("img", {"class": "hide"})['src']
 
 
 def __transform_response(response: {str: []}, additional_stays: [{str: any}]) -> [{str: str}]:
@@ -108,11 +109,52 @@ def __transform_response(response: {str: []}, additional_stays: [{str: any}]) ->
             "y": aux_infos[1],
         })
     
+    __remove_duplicates(transformed_response, additional_stays)
+    
     for stay in additional_stays:
         transformed_response.append(stay)
 
     return transformed_response
 
+def __remove_duplicates(booking_stays: [{str: str}], airbnb_stays: [{str: str}]) -> [{str: str}]:
+    booking_names = [stay["name"] for stay in booking_stays]
+    airbnb_names = [stay["name"] for stay in airbnb_stays]
+    
+    similar_stay_names = find_similar_stays(booking_names, airbnb_names)
+    
+    for similar_stay in similar_stay_names:
+        booking_stays_duplicate = [stay for stay in booking_stays if stay["name"] != similar_stay[0]]
+        airbnb_stays_duplicate = [stay for stay in airbnb_stays if stay["name"] != similar_stay[1]]
+        
+        for i in range(len(booking_stays_duplicate)):
+            if int(booking_stays_duplicate[i]["price"].split(" ")[0]) > int(airbnb_stays_duplicate[i]["price"].split(" ")[0]):
+                booking_stays.remove(booking_stays_duplicate[i])
+            else:
+                airbnb_stays.remove(airbnb_stays_duplicate[i])
+    
+
+def __preprocess_text(string):
+    tokens = nltk.word_tokenize(string.lower())
+    return ' '.join(tokens)
+
+def __compute_cosine_similarity(string1, string2, vectorizer):
+    string1 = __preprocess_text(string1)
+    string2 = __preprocess_text(string2)
+    tfidf_matrix = vectorizer.transform([string1, string2])
+    cosine_sim = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])
+    return cosine_sim[0][0]
+
+def find_similar_stays(booking_stay_list, airbnb_stay_list, threshold=0.7):
+    vectorizer = TfidfVectorizer().fit([__preprocess_text(text) for text in booking_stay_list + airbnb_stay_list])
+    similar_pairs = []
+    for stay1 in booking_stay_list:
+        for stay2 in airbnb_stay_list:
+            similarity_score = __compute_cosine_similarity(stay1, stay2, vectorizer)
+            if similarity_score > 0.0:
+                logging.info(f"Similarity between {stay1} and {stay2} is {similarity_score}")
+            if similarity_score > threshold:
+                similar_pairs.append((stay1, stay2, similarity_score))
+    return similar_pairs
 
 def get_stays(city: str, adults: int = None, rooms: int = None, checkin_date: str = None, checkout_date: str = None,
               price_range_start: int = None, price_range_end: int = None) -> [{str: {str: str}}]:
@@ -128,7 +170,7 @@ def get_stays(city: str, adults: int = None, rooms: int = None, checkin_date: st
     # logging.error(f"URL: {url}")
     # response1 = requests.get(url, headers=headers)
     response = requests.get(url, headers=headers)
-
+    print("link: ", url)
     # if response1 == response:
         # logging.error("THEY ARE EQUAL")
 
@@ -151,6 +193,12 @@ def get_stays(city: str, adults: int = None, rooms: int = None, checkin_date: st
     })
     prices = [price.get_text().strip() for price in prices_raw]
 
+    images_raw = soup.findAll('img', {
+        'data-testid': 'image'
+    })
+    
+    images = [image['src'] for image in images_raw]
+
     thread.join()
 
     logging.info(f"For airbnb stays got {len(airbnb_stays)} stays in {time.time() - start_time} seconds")
@@ -158,16 +206,16 @@ def get_stays(city: str, adults: int = None, rooms: int = None, checkin_date: st
     logging.info(airbnb_stays[0])
     
     response = {}
-    for name, link, price in zip(titles, links, prices):
-        response[name] = [link, price]
+    for name, link, price, image in zip(titles, links, prices, images):
+        response[name] = [link, price, (0, 0, image)]
 
-    threads = []
-    for name, (link, price) in response.items():
-        t = thr.Thread(target=__get_specific_info, args=(link, name, response))
-        threads.append(t)
-        t.start()
-    for t in threads:
-        t.join()
+    # threads = []
+    # for name, (link, price) in response.items():
+        # t = thr.Thread(target=__get_specific_info, args=(link, name, response))
+    #     threads.append(t)
+    #     t.start()
+    # for t in threads:
+    #     t.join()
 
     logging.info(f"Got stays for {city} in {time.time() - start_time} seconds")
     # logging.debug(f'URL: {url}')
@@ -231,12 +279,14 @@ def check_stay_availability(stay_url):
 
     soup = BeautifulSoup(response.content, "html.parser")
     stay_cards = soup.findAll('div', {
-        'data-testid': 'property-card-container'
+        'id': 'no_availability_msg'
     })
 
-    unavailable_stays = [card for card in stay_cards if "This property has no availability" in card.text]
     
-    if len(unavailable_stays) > 0:
+    
+    
+    
+    if len(stay_cards) > 0:
         return {"available": False}
     
     return {"available": True}
