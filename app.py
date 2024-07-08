@@ -12,10 +12,10 @@ logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-eureka_client.init(eureka_server="http://localhost:8761",
-                   app_name="scraper",
-                   instance_port=8090,
-                   instance_host="127.0.0.1")
+# eureka_client.init(eureka_server="http://localhost:8761",
+#                    app_name="scraper",
+#                    instance_port=8090,
+#                    instance_host="127.0.0.1")
 
 
 class SSScraperMicroservice(Microservice):

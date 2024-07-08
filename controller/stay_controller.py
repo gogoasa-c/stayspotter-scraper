@@ -37,7 +37,8 @@ def check_stay_availability():
         return jsonify({'error': 'stayUrl is required'}).status_code(400)
     
     stay_url = request.json['stayUrl']
+    initial_price = request.json['initialPrice']
     
-    response = stay_service.check_stay_availability(stay_url)
+    response = stay_service.check_stay_availability(stay_url, initial_price)
     
     return jsonify(response)

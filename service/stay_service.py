@@ -272,21 +272,82 @@ def get_stays_airbnb(city: str, adults: int = None, rooms: int = None, checkin_d
         print(e)
         driver.quit()
 
-def check_stay_availability(stay_url):
+def check_stay_availability(stay_url, initial_price):
+    if "booking.com" in stay_url:
+        return check_stay_availability_booking(stay_url, initial_price)
+    
+    if "airbnb.com" in stay_url:
+        print('AIRBNB SFJKJS')
+        return check_stay_availability_airbnb(stay_url, initial_price)
+    
+    return {"error": "Something went wrong"}
+
+def check_stay_availability_booking(stay_url, initial_price):
+    headers = ({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) ' +
+                              'Chrome/96.0.4664.110 Safari/537.36 Edg/96.0.1054.62'})
+    
+    driver = webdriver.Chrome()
+    
+    driver.get(stay_url)
+    
+    try:
+        WebDriverWait(driver, 3).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, 'span[class="_j1kt73"]'))
+        )
+        
+        availability_response = {}
+
+        soup = BeautifulSoup(driver.page_source, "html.parser")
+        stay_cards = soup.findAll('div', {
+            'id': 'no_availability_msg'
+        })
+
+        availability_response['available'] = len(stay_cards) == 0 
+
+        prices = soup.findAll('span', {
+            "class": "prco-valign-middle-helper"
+        })
+        if len(prices) == 0:
+            availability_response['priceChanged'] = False
+            return availability_response
+            
+        prices_text = [price.get_text() for price in prices]
+        price_raw = prices_text[0]
+        price = int(''.join(filter(str.isdigit, price_raw)))
+        availability_response['priceChanged'] = price != initial_price
+        
+        return availability_response
+        
+    except Exception as e:
+        print(e)
+        
+    
+    # response = requests.get(stay_url, headers=headers)
+
+
+
+def check_stay_availability_airbnb(stay_url, initial_price):
     headers = ({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) ' +
                               'Chrome/96.0.4664.110 Safari/537.36 Edg/96.0.1054.62'})
     response = requests.get(stay_url, headers=headers)
 
+    availability_response = {}
+
     soup = BeautifulSoup(response.content, "html.parser")
     stay_cards = soup.findAll('div', {
-        'id': 'no_availability_msg'
+        'id': 'bookItTripDetailsError'
     })
+    print(stay_cards)
+    availability_response['available'] = len(stay_cards) == 0
 
+    prices = soup.findAll('span', {
+        "class": "_j1kt73"
+    })
     
+    print(prices)
+    prices_text = [price.get_text() for price in prices]
+    price_raw = prices_text[0]
+    price = int(''.join(filter(str.isdigit, price_raw)))
+    availability_response['priceChanged'] = price != initial_price
     
-    
-    
-    if len(stay_cards) > 0:
-        return {"available": False}
-    
-    return {"available": True}
+    return availability_response
