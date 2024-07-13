@@ -14,6 +14,7 @@ import re
 import threading as thr
 
 USD = "USD"
+RON = "RON"
 
 nltk.download('punkt')
 
@@ -32,7 +33,7 @@ def __build_url(city: str, adults: int = None, rooms: int = None, checkin_date: 
     if rooms is not None:
         base_url += "&no_rooms=" + str(rooms)
     if price_range_start is not None and price_range_end is not None:
-        base_url += "&nflt=price%3D" + USD + "-" + str(price_range_start) + "-" + str(price_range_end) + "-1"
+        base_url += "&nflt=price%3D" + RON + "-" + str(price_range_start) + "-" + str(price_range_end) + "-1"
 
     base_url += "&group_children=0"
 
@@ -59,6 +60,8 @@ def __build_url_airbnb(city: str, adults: int = None, rooms: int = None, checkin
         base_url += f"price_min={price_range_start}&"
     if price_range_end:
         base_url += f"price_max={price_range_end}&"
+        
+    logging.info(f"Built URL: {base_url}")
     return base_url
 
 
@@ -343,11 +346,14 @@ def check_stay_availability_airbnb(stay_url, initial_price):
     
     availability_response['available'] = len(stay_cards) == 0
 
+    if availability_response['available'] == False:
+        availability_response['priceChanged'] = False
+        return availability_response
+
     prices = soup.findAll('span', {
         "class": "_j1kt73"
     })
     
-    # print(prices)
     prices_text = [price.get_text() for price in prices]
     price_raw = prices_text[1]
     print(price_raw)
