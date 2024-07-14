@@ -126,15 +126,18 @@ def __remove_duplicates(booking_stays: [{str: str}], airbnb_stays: [{str: str}])
     similar_stay_names = find_similar_stays(booking_names, airbnb_names)
     
     for similar_stay in similar_stay_names:
-        booking_stays_duplicate = [stay for stay in booking_stays if stay["name"] != similar_stay[0]]
-        airbnb_stays_duplicate = [stay for stay in airbnb_stays if stay["name"] != similar_stay[1]]
+        booking_stays_duplicate = [stay for stay in booking_stays if stay["name"] == similar_stay[0]]
+        airbnb_stays_duplicate = [stay for stay in airbnb_stays if stay["name"] == similar_stay[1]]
         
-        for i in range(len(booking_stays_duplicate)):
-            if int(booking_stays_duplicate[i]["price"].split(" ")[0]) > int(airbnb_stays_duplicate[i]["price"].split(" ")[0]):
-                booking_stays.remove(booking_stays_duplicate[i])
-            else:
-                airbnb_stays.remove(airbnb_stays_duplicate[i])
-    
+        # logging.info("=====================================")
+        # logging.info(booking_stays_duplicate)
+        # logging.info(airbnb_stays_duplicate)
+        # logging.info("=====================================")
+        
+        if int(''.join(filter(str.isdigit, booking_stays_duplicate[0]["price"]))) > int(''.join(filter(str.isdigit, airbnb_stays_duplicate[0]["price"]))):
+            booking_stays.remove(booking_stays_duplicate[0])
+        else:
+            airbnb_stays.remove(airbnb_stays_duplicate[0])
 
 def __preprocess_text(string):
     tokens = nltk.word_tokenize(string.lower())
@@ -280,7 +283,6 @@ def check_stay_availability(stay_url, initial_price):
         return check_stay_availability_booking(stay_url, initial_price)
     
     if "airbnb.com" in stay_url:
-        print('AIRBNB SFJKJS')
         return check_stay_availability_airbnb(stay_url, initial_price)
     
     return {"error": "Something went wrong"}
